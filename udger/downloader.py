@@ -11,7 +11,7 @@ import urllib.request
 
 class UdgerDownloader(object):
 
-    udger_data_file = 'udgerdb_v3.dat.gz'
+    udger_data_file = 'udgerdb_v4.dat.gz'
     download_url = 'http://data.udger.com/'
 
     def __init__(self, client_key, data_dir=None):

@@ -16,11 +16,12 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 10:
 else:
     from collections import MutableMapping
 
-
 unperlize_re = re.compile('^/?(.*)/([si]*)$')
+
 
 def make_empty_row(columns_dict):
     return dict((col, None) for col in columns_dict)
+
 
 class cached_property(object):
     """
@@ -37,7 +38,7 @@ class cached_property(object):
         return res
 
 
-class LRUDict(collections.MutableMapping):
+class LRUDict(MutableMapping):
     def __init__(self, maxlen, *a, **k):
         self.maxlen = maxlen
         self.d = dict(*a, **k)
@@ -61,6 +62,7 @@ class LRUDict(collections.MutableMapping):
             self.popitem()
         self.d[k] = v
 
+
 class IdRegString(object):
     def __init__(self, rowid, word_id, word2_id, pattern):
         self.rowid = rowid
@@ -68,8 +70,9 @@ class IdRegString(object):
         self.word2_id = word2_id
         self.pattern = pattern
 
+
 class UdgerBase(object):
-    db_filename = 'udgerdb_v3.dat'
+    db_filename = 'udgerdb_v4.dat'
 
     _client_word_detector = None
     _os_word_detector = None
@@ -95,7 +98,8 @@ class UdgerBase(object):
         ip_ver=None,
     )
 
-    def __init__(self, data_dir=None, lru_cache_size=10000):
+    def __init__(self, client_hints_parser_enabled=True, data_dir=None, lru_cache_size=10000):
+        self.client_hints_parser_enabled = client_hints_parser_enabled
         self.data_dir = data_dir or tempfile.gettempdir()
         self.regexp_cache = {}
         if lru_cache_size > 0:

@@ -244,3 +244,118 @@ class Queries(object):
             iplong_to4 >= ? AND iplong_to5 >= ? AND iplong_to6 >= ? AND iplong_to7 >= ?
     """ % join_sql_columns(datacenter_columns)
 
+    client_ch_regex_columns = {
+        'class_id': 'class_id',
+        'client_id': 'client_id',
+        'regstring': 'regstring',
+        'name': 'name',
+        'name_code': 'name_code',
+        'homepage': 'homepage',
+        'icon': 'icon',
+        'icon_big': 'icon_big',
+        'engine': 'engine',
+        'vendor': 'vendor',
+        'vendor_code': 'vendor_code',
+        'vendor_homepage': 'vendor_homepage',
+        'uptodate_current_version': 'uptodate_current_version',
+        'client_classification': 'client_classification',
+        'client_classification_code ': 'client_classification_code ',
+        'ua_family_info_url' : '"https://udger.com/resources/ua-list/browser-detail?browser=" || REPLACE(name, " ", "%20")'
+    }
+
+    client_ch_regex_sql = """
+        SELECT
+            %s
+        FROM
+            udger_client_ch_regex
+        JOIN
+            udger_client_list ON udger_client_list.id=udger_client_ch_regex.client_id
+        JOIN
+            udger_client_class ON udger_client_class.id=udger_client_list.class_id
+        WHERE
+            udger_client_ch_regex.mobile = ?
+        ORDER BY
+            sequence ASC
+    """ % join_sql_columns(client_ch_regex_columns)
+
+    os_ch_regex_columns = {
+        'os_id': 'os_id',
+        'regstring': 'regstring',
+        'family': 'family',
+        'family_code': 'family_code',
+        'name,name_code': 'name,name_code',
+        'homepage,icon': 'homepage,icon',
+        'icon_big,vendor': 'icon_big,vendor',
+        'vendor_code': 'vendor_code',
+        'vendor_homepage': 'vendor_homepage',
+        'os_info_url': '"https://udger.com/resources/ua-list/os-detail?os=" || REPLACE(name, " ", "%20")'
+    }
+
+    os_ch_regex_sql = """
+        SELECT  
+            %s
+        FROM  
+            udger_os_ch_regex  
+        JOIN  
+            udger_os_list ON udger_os_list.id=udger_os_ch_regex.os_id  
+        WHERE  
+            udger_os_ch_regex.version = ? OR udger_os_ch_regex.version = '-all-'  
+        ORDER BY sequence ASC
+    """ % join_sql_columns(os_ch_regex_columns)
+
+    device_name_ch_regex_sql = """
+        SELECT
+            id  as id
+        FROM
+            udger_devicename_regex
+        WHERE
+            (os_family_code = ? AND os_code = '-all-')
+            OR
+            (os_family_code = ? AND os_code = ?)
+        ORDER BY
+            sequence
+        LIMIT 0,1
+    """
+
+    device_name_list_ch_columns = {
+        'marketname': 'marketname',
+        'brand_code': 'brand_code',
+        'brand': 'brand',
+        'brand_url': 'brand_url',
+        'icon': 'icon',
+        'icon_big': 'icon_big',
+        'deviceclass_id': 'deviceclass_id',
+        'brand_info_url': '"https://udger.com/resources/ua-list/devices-brand-detail?brand=" || REPLACE(brand_code, " ", "%20")'
+    }
+
+    device_name_list_ch_sql = """
+        SELECT  
+            %s
+        FROM  
+            udger_devicename_list  
+        JOIN  
+            udger_devicename_brand ON udger_devicename_brand.id=udger_devicename_list.brand_id  
+        WHERE  
+            regex_id = ? AND code = ?
+    """ % join_sql_columns(device_name_list_ch_columns)
+
+    device_class_ch_sql = """
+        SELECT  
+            %s 
+        FROM  
+            udger_deviceclass_list  
+        WHERE  
+            id = ?
+    """ % join_sql_columns(device_columns)
+
+    device_class_by_mobile_ch_sql = """
+        SELECT  
+            %s 
+        FROM  
+            udger_deviceclass_list  
+        JOIN  
+            udger_deviceclass_ch ON udger_deviceclass_list.id=udger_deviceclass_ch.device_id  
+        WHERE  
+            udger_deviceclass_ch.mobile = ?
+    """ % join_sql_columns(device_columns)
+
