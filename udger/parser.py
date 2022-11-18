@@ -7,9 +7,9 @@ class UaRequest(object):
     def __init__(self, ua_string=None, sec_ch_ua=None, sec_ch_ua_full_version_list=None, sec_ch_ua_mobile=None,
                  sec_ch_ua_full_version=None, sec_ch_ua_platform=None, sec_ch_ua_platform_version=None, sec_ch_ua_model=None):
         self.ua_string = ua_string
-        self.sec_ch_ua = sec_ch_ua.strip('"') if sec_ch_ua else None
+        self.sec_ch_ua = sec_ch_ua
         self.sec_ch_ua_full_version_list = sec_ch_ua_full_version_list.strip('"') if sec_ch_ua_full_version_list else None
-        self.sec_ch_ua_mobile = sec_ch_ua_mobile.strip('"') if sec_ch_ua_mobile else None
+        self.sec_ch_ua_mobile = sec_ch_ua_mobile
         self.sec_ch_ua_full_version = sec_ch_ua_full_version.strip('"') if sec_ch_ua_full_version else None
         self.sec_ch_ua_platform = sec_ch_ua_platform.strip('"') if sec_ch_ua_platform else None
         self.sec_ch_ua_platform_version = sec_ch_ua_platform_version.strip('"') if sec_ch_ua_platform_version else None
@@ -29,21 +29,21 @@ class Udger(UdgerBase):
             if cached is not None:
                 return cached
 
-        ua, class_id, client_id = self._client_detector(ua_request.ua_string)
+        ua, class_id, client_id = self._process_client(ua_request.ua_string)
         is_crawler = (ua['ua_class'] == 'Crawler')
 
-        opsys = self._os_detector(ua_request.ua_string, client_id) if not is_crawler else None
+        opsys = self._process_os(ua_request.ua_string, client_id) if not is_crawler else None
         ua.update(opsys or self.os_emptyrow)
 
-        dev = self._device_detector(ua_request.ua_string, class_id) if not is_crawler else None
+        dev = self._process_device(ua_request.ua_string, class_id) if not is_crawler else None
         ua.update(dev or self.device_emptyrow)
 
-        marketname = self._marketname_detector(ua, ua_request.ua_string, class_id) if not is_crawler and ua['os_family_code'] else None
+        marketname = self._process_marketname(ua, ua_request.ua_string, class_id) if not is_crawler and ua['os_family_code'] else None
         ua.update(marketname or self.marketname_emptyrow)
 
-        if not is_crawler and self.client_hints_parser_enabled:
+        if ua.get('ua_class_code') != 'Crawler' and self.client_hints_parser_enabled:
             ua.update(vars(ua_request))
-            self._parse_client_hints(ua, ua_request)
+            self._process_client_hints(ua, ua_request)
         else:
             ua['ua_string'] = ua_request.ua_string
 
@@ -86,7 +86,7 @@ class Udger(UdgerBase):
 
         return ip
 
-    def _client_detector(self, ua_string):
+    def _process_client(self, ua_string):
         ua = self.db_get_first_row(Queries.crawler_sql, ua_string)
         if ua:
             del ua['class_id']
@@ -104,19 +104,19 @@ class Udger(UdgerBase):
             client_id = ua.pop('client_id', 0)
         return ua, class_id, client_id
 
-    def _os_detector(self, ua_string, client_id):
+    def _process_os(self, ua_string, client_id):
         rowid = self._find_id_from_list(ua_string, self.os_word_detector.find_words(ua_string), self.os_regstring_list)
         if rowid != -1:
             return self.db_get_first_row(Queries.os_sql, rowid)
         return client_id != 0 and self.db_get_first_row(Queries.client_os_sql, client_id)
 
-    def _device_detector(self, ua_string, class_id):
+    def _process_device(self, ua_string, class_id):
         rowid = self._find_id_from_list(ua_string, self.device_word_detector.find_words(ua_string), self.device_regstring_list)
         if rowid != -1:
             return self.db_get_first_row(Queries.device_sql, rowid)
         return class_id != -1 and self.db_get_first_row(Queries.client_class_sql, class_id)
 
-    def _marketname_detector(self, ua, ua_string, class_id):
+    def _process_marketname(self, ua, ua_string, class_id):
         marketname = None
         # must complete first so cursors don't collide
         rows = tuple(self.db_iter_rows(
@@ -138,9 +138,13 @@ class Udger(UdgerBase):
                     break
         return marketname
 
-    def _parse_client_hints(self, ua, ua_request):
+    def _process_client_hints(self, ua, ua_request):
 
-        sec_ch_ua_mobile = 0 if ua_request.sec_ch_ua_mobile == "?0" else 1
+        if not ua_request.sec_ch_ua_mobile or ua_request.sec_ch_ua_mobile == "?0":
+            sec_ch_ua_mobile = 0
+        else:
+            sec_ch_ua_mobile = 1
+
         ua['sec_ch_ua_mobile'] = sec_ch_ua_mobile
 
         regstring_search1 = ua_request.sec_ch_ua_full_version_list
@@ -208,32 +212,31 @@ class Udger(UdgerBase):
             if row3:
                 row4 = self.db_get_first_row(Queries.device_name_list_ch_sql, row3['id'], ua_request.sec_ch_ua_model)
                 if row4:
-                    ua['DeviceMarketname'] = row4['marketname']
-                    ua['DeviceBrand'] = row4['brand']
-                    ua['DeviceBrandCode'] = row4['brand_code']
-                    ua['DeviceBrandHomepage'] = row4['brand_url']
-                    ua['DeviceBrandIcon'] = row4['icon']
-                    ua['DeviceBrandIconBig'] = row4['icon_big']
-                    ua['DeviceBrandInfoUrl'] = row4['brand_info_url']
+                    ua['device_marketname'] = row4['marketname']
+                    ua['device_brand'] = row4['brand']
+                    ua['device_brand_code'] = row4['brand_code']
+                    ua['device_brand_homepage'] = row4['brand_url']
+                    ua['device_brand_icon'] = row4['icon']
+                    ua['device_brand_icon_big'] = row4['icon_big']
+                    ua['device_brand_info_url'] = row4['brand_info_url']
 
                     row5 = self.db_get_first_row(Queries.device_class_ch_sql, row4['deviceclass_id'])
                     if row5:
-                        ua['DeviceClass'] = row5['"device_class']
-                        ua['DeviceClassCode'] = row5['"device_class_code']
-                        ua['DeviceClassIcon'] = row5['"device_class_icon']
-                        ua['DeviceClassIconBig'] = row5['"device_class_icon_big']
-                        ua['DeviceClassInfoUrl'] = row5['"device_class_info_url']
+                        ua['device_class'] = row5['"device_class']
+                        ua['device_class_code'] = row5['"device_class_code']
+                        ua['device_class_icon'] = row5['"device_class_icon']
+                        ua['device_class_icon_big'] = row5['"device_class_icon_big']
+                        ua['device_class_info_url'] = row5['"device_class_info_url']
 
 
         if not ua['device_class'] and ua['ua_class_code']:
-            row6 = self.db_get_first_row(Queries.device_class_by_mobile_ch_sql, ua_request.sec_ch_ua_mobile)
+            row6 = self.db_get_first_row(Queries.device_class_by_mobile_ch_sql, sec_ch_ua_mobile)
             if row6:
-                    ua['DeviceClass'] = row6['device_class']
-                    ua['DeviceClassCode'] = row6['device_class_code']
-                    ua['DeviceClassIcon'] = row6['device_class_icon']
-                    ua['DeviceClassIconBig'] = row6['device_class_icon_big']
-                    ua['DeviceClassInfoUrl'] = row6['device_class_info_url']
-
+                    ua['device_class'] = row6['device_class']
+                    ua['device_class_code'] = row6['device_class_code']
+                    ua['device_class_icon'] = row6['device_class_icon']
+                    ua['device_class_icon_big'] = row6['device_class_icon_big']
+                    ua['device_class_info_url'] = row6['device_class_info_url']
 
     def _find_id_from_list(self, ua_string, found_client_words, reg_string_list):
         self.last_regexp_match = None

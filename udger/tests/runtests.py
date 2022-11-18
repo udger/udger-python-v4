@@ -3,7 +3,7 @@ import json
 import operator
 import sys
 
-from udger import Udger
+from udger import UaRequest, Udger
 
 try:
     reduce
@@ -62,21 +62,31 @@ def iter_compare_dicts(dict1, dict2, only_common_keys=False, comparison_op=opera
             yield key, (Ellipsis, dict2[key])
 
 
-header_written = False
 writer = csv.writer(sys.stdout, delimiter=';', quotechar='"')
 
 
-def do_tests(json_filepath, test_func):
-    global header_written, writer
-
-    for testcase in json.load(open(json_filepath)):
-        test_string = testcase['test']['teststring']
+def test_ua():
+    test_no = 1
+    for testcase in json.load(open('test_ua.json')):
+        ua_request = UaRequest(ua_string=testcase['test']['User-Agent'],
+                               sec_ch_ua=testcase['test']['Sec-Ch-Ua'],
+                               sec_ch_ua_full_version_list=testcase['test']['Sec-Ch-Ua-Full-Version-List'],
+                               sec_ch_ua_mobile=testcase['test']['Sec-Ch-Ua-Mobile'],
+                               sec_ch_ua_full_version=testcase['test']['Sec-Ch-Ua-Full-Version'],
+                               sec_ch_ua_platform=testcase['test']['Sec-Ch-Ua-Platform'],
+                               sec_ch_ua_platform_version=testcase['test']['Sec-Ch-Ua-Platform-Version'],
+                               sec_ch_ua_model=testcase['test']['Sec-Ch-Ua-Model'])
 
         expected = testcase['ret']
 
-        resolved = test_func(test_string)
+        resolved = udger.parse_ua_request(ua_request)
+
         resolved.pop('crawler_last_seen', None)
         resolved.pop('ip_last_seen', None)
+
+        print('### Test : {}'.format(test_no))
+
+        ok = True
 
         for field, (value_expected, value_returned) in iter_compare_dicts(expected, resolved):
             if (value_expected or '') == (value_returned or '') == '':
@@ -91,13 +101,55 @@ def do_tests(json_filepath, test_func):
             if str(value_returned) == value_expected:
                 continue
 
-            if not header_written:
-                writer.writerow(('STRING', 'RESPONSE_FIELD', 'VALUE_EXPECTED', 'VALUE_RETURNED'))
-                header_written = True
+            ok = False
+
+            print('Failed {} : value={}  expected={}'.format(field, value_returned, value_expected));
+
+        test_no += 1
+        if ok:
+            print('SUCCEEDED')
+        else:
+            print('FAILED!')
+
+
+def test_ip():
+    test_no = 1
+
+    for testcase in json.load(open('test_ip.json')):
+        test_string = testcase['test']['teststring']
+
+        expected = testcase['ret']
+
+        resolved = udger.parse_ip(test_string)
+        resolved.pop('crawler_last_seen', None)
+        resolved.pop('ip_last_seen', None)
+
+        print('### Test : {}'.format(test_no))
+        ok = True
+
+        for field, (value_expected, value_returned) in iter_compare_dicts(expected, resolved):
+            if (value_expected or '') == (value_returned or '') == '':
+                continue
+
+            # this client replaces ' ' with '%20' in strings; ignore the mismatch with test data
+            if value_expected is not Ellipsis and (value_expected or '').startswith('https://'):
+                if value_expected.replace(' ', '%20') == value_returned:
+                    continue
+
+            # tolerate number in strings
+            if str(value_returned) == value_expected:
+                continue
+
+            print('Failed {} : value={}  expected={}'.format(field, value_returned, value_expected));
 
             writer.writerow((test_string, field, value_expected, value_returned))
+            ok = False
+        if ok:
+            print('SUCCEEDED')
+        else:
+            print('FAILED!')
 
-udger = Udger()
+udger = Udger(data_dir='./')
 
-do_tests('test_ua.json', udger.parse_ua)
-do_tests('test_ip.json', udger.parse_ip)
+test_ua()
+test_ip()

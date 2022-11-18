@@ -1,5 +1,5 @@
-from .parser import Udger
+from .parser import UaRequest, Udger
 
-__version__ = '4.0.2'
+__version__ = '5.0.0'
 
-__all__ = ['Udger']
+__all__ = ['UaRequest', 'Udger']
