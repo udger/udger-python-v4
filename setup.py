@@ -5,7 +5,7 @@ from udger import __version__
 
 
 setup(
-    name='udger',
+    name='udger-v4',
     version=__version__,
     license='BSD',
     author='The Udger Team',
@@ -19,7 +19,7 @@ setup(
     platforms='any',
     zip_safe=True,
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 1 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",

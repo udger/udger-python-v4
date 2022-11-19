@@ -15,6 +15,16 @@ class UaRequest(object):
         self.sec_ch_ua_platform_version = sec_ch_ua_platform_version.strip('"') if sec_ch_ua_platform_version else None
         self.sec_ch_ua_model = sec_ch_ua_model.strip('"') if sec_ch_ua_model else None
 
+    def cache_key(self):
+        return '[uaString=' + (self.ua_string if self.ua_string is not None else '') + \
+                ', secChUa=' + (self.sec_ch_ua if self.sec_ch_ua is not None else '') + \
+                ', secChUaFullVersionList=' + (self.sec_ch_ua_full_version_list if self.sec_ch_ua_full_version_list is not None else '') + \
+                ', secChUaMobile=' + (self.sec_ch_ua_mobile if self.sec_ch_ua_mobile is not None else '') + \
+                ', secChUaFullVersion=' + (self.sec_ch_ua_full_version if self.sec_ch_ua_full_version is not None else '') + \
+                ', secChUaPlatform=' + (self.sec_ch_ua_platform if self.sec_ch_ua_platform is not None else '') + \
+                ', secChUaPlatformVersion=' + (self.sec_ch_ua_platform_version if self.sec_ch_ua_platform_version is not None else '') + \
+                ', secChUaModel=' + (self.sec_ch_ua_model if self.sec_ch_ua_model is not None else '') + ']'
+
 
 class Udger(UdgerBase):
 
@@ -24,8 +34,10 @@ class Udger(UdgerBase):
 
     def parse_ua_request(self, ua_request):
 
-        if self.lru_cache is not None:
-            cached = self.lru_cache.get(ua_request.ua_string, None)
+        cache_key = None
+        if self.lru_cache is not None and ua_request is not None:
+            cache_key = ua_request.cache_key()
+            cached = self.lru_cache.get(cache_key, None)
             if cached is not None:
                 return cached
 
@@ -47,7 +59,8 @@ class Udger(UdgerBase):
         else:
             ua['ua_string'] = ua_request.ua_string
 
-        self.lru_cache[ua_request.ua_string] = ua
+        if cache_key is not None:
+            self.lru_cache[cache_key] = ua
 
         return ua
 
@@ -61,8 +74,8 @@ class Udger(UdgerBase):
             pass
         else:
             ip.update(
-                ip_classification="Unrecognized",
-                ip_classification_code="unrecognized",
+                ip_classification='Unrecognized',
+                ip_classification_code='unrecognized',
             )
 
             ip_row = self.db_get_first_row(Queries.ip_sql, ip_string)
@@ -140,12 +153,15 @@ class Udger(UdgerBase):
 
     def _process_client_hints(self, ua, ua_request):
 
-        if not ua_request.sec_ch_ua_mobile or ua_request.sec_ch_ua_mobile == "?0":
+        if not ua_request.sec_ch_ua_mobile:
             sec_ch_ua_mobile = 0
+            ua['sec_ch_ua_mobile'] = ''
         else:
-            sec_ch_ua_mobile = 1
-
-        ua['sec_ch_ua_mobile'] = sec_ch_ua_mobile
+            if ua_request.sec_ch_ua_mobile == '?0':
+                sec_ch_ua_mobile = 0
+            else:
+                sec_ch_ua_mobile = 1
+            ua['sec_ch_ua_mobile'] = sec_ch_ua_mobile
 
         regstring_search1 = ua_request.sec_ch_ua_full_version_list
 
@@ -170,7 +186,7 @@ class Udger(UdgerBase):
 
                     ua['ua_class'] = dn_row['client_classification']
                     ua['ua_class_code'] = dn_row['client_classification_code']
-                    ua['ua'] = dn_row['name'] + " " + ver
+                    ua['ua'] = dn_row['name'] + ' ' + ver
                     ua['ua_version'] = ver
                     ua['ua_version_major'] = ver_major
                     ua['ua_uptodate_current_version'] = dn_row['uptodate_current_version']
@@ -196,7 +212,7 @@ class Udger(UdgerBase):
                     if regex and self.regexp_func(regex, regstring_search2):
                         ua['os'] = dn_row['name']
                         ua['os_code'] = dn_row['name_code']
-                        ua['os_home_page'] = dn_row['homepage']
+                        ua['os_homepage'] = dn_row['homepage']
                         ua['os_icon'] = dn_row['icon']
                         ua['os_icon_big'] = dn_row['icon_big']
                         ua['os_info_url'] = dn_row['os_info_url']
@@ -222,11 +238,11 @@ class Udger(UdgerBase):
 
                     row5 = self.db_get_first_row(Queries.device_class_ch_sql, row4['deviceclass_id'])
                     if row5:
-                        ua['device_class'] = row5['"device_class']
-                        ua['device_class_code'] = row5['"device_class_code']
-                        ua['device_class_icon'] = row5['"device_class_icon']
-                        ua['device_class_icon_big'] = row5['"device_class_icon_big']
-                        ua['device_class_info_url'] = row5['"device_class_info_url']
+                        ua['device_class'] = row5['device_class']
+                        ua['device_class_code'] = row5['device_class_code']
+                        ua['device_class_icon'] = row5['device_class_icon']
+                        ua['device_class_icon_big'] = row5['device_class_icon_big']
+                        ua['device_class_info_url'] = row5['device_class_info_url']
 
 
         if not ua['device_class'] and ua['ua_class_code']:
@@ -256,7 +272,7 @@ class Udger(UdgerBase):
                 ver = ''
 
             ua['ua_version'] = ver
-            ua['ua'] += " " + ver
+            ua['ua'] += ' ' + ver
             ua['ua_version_major'] = ver.split('.')[0]
         else:
             ua['ua_version'] = ua['ua_version_major'] = None
