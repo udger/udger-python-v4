@@ -47,7 +47,7 @@ class Udger(UdgerBase):
         opsys = self._process_os(ua_request.ua_string, client_id) if not is_crawler else None
         ua.update(opsys or self.os_emptyrow)
 
-        dev = self._process_device(ua_request.ua_string, class_id) if not is_crawler else None
+        dev = self._process_device(ua_request.ua_string, class_id)
         ua.update(dev or self.device_emptyrow)
 
         marketname = self._process_marketname(ua, ua_request.ua_string, class_id) if not is_crawler and ua['os_family_code'] else None

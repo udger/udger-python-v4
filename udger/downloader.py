@@ -5,9 +5,9 @@ from .base import UdgerBase
 
 import gzip
 import io
-import struct
 import tempfile
 import urllib.request
+
 
 class UdgerDownloader(object):
 
