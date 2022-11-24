@@ -1,1 +1,1 @@
-# udger-python-v4
+# Udger client for Python (data ver. 4)
