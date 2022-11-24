@@ -81,10 +81,16 @@ class UdgerBase(object):
     _os_regstring_list = None
     _device_regstring_list = None
 
-    client_emptyrow = make_empty_row(Queries.client_columns)
-    client_emptyrow.update(
+    client_unrecognized_row = make_empty_row(Queries.client_columns)
+    client_unrecognized_row.update(
         ua_class="Unrecognized",
         ua_class_code="unrecognized",
+    )
+
+    client_empty_row = make_empty_row(Queries.client_columns)
+    client_empty_row.update(
+        ua_class="",
+        ua_class_code="",
     )
 
     os_emptyrow = make_empty_row(Queries.os_columns)

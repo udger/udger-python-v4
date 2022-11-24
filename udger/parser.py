@@ -100,21 +100,26 @@ class Udger(UdgerBase):
         return ip
 
     def _process_client(self, ua_string):
-        ua = self.db_get_first_row(Queries.crawler_sql, ua_string)
-        if ua:
-            del ua['class_id']
-            del ua['client_id']
-            class_id = 99
-            client_id = -1
-        else:
-            rowid = self._find_id_from_list(ua_string, self.client_word_detector.find_words(ua_string), self.client_regstring_list)
-            if rowid != -1:
-                ua = self.db_get_first_row(Queries.client_sql, rowid)
-                self._patch_versions(ua)
-            else:
-                ua = self.client_emptyrow.copy()
+        if not ua_string:
+            ua = self.client_empty_row.copy()
             class_id = ua.pop('class_id', -1)
             client_id = ua.pop('client_id', 0)
+        else:
+            ua = self.db_get_first_row(Queries.crawler_sql, ua_string)
+            if ua:
+                del ua['class_id']
+                del ua['client_id']
+                class_id = 99
+                client_id = -1
+            else:
+                rowid = self._find_id_from_list(ua_string, self.client_word_detector.find_words(ua_string), self.client_regstring_list)
+                if rowid != -1:
+                    ua = self.db_get_first_row(Queries.client_sql, rowid)
+                    self._patch_versions(ua)
+                else:
+                    ua = self.client_unrecognized_row.copy()
+                class_id = ua.pop('class_id', -1)
+                client_id = ua.pop('client_id', 0)
         return ua, class_id, client_id
 
     def _process_os(self, ua_string, client_id):
