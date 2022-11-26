@@ -19,7 +19,7 @@ setup(
     platforms='any',
     zip_safe=True,
     classifiers=[
-        "Development Status :: 1 - Production/Stable",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
