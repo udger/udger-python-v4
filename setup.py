@@ -12,7 +12,7 @@ setup(
     author_email='info@udger.com',
     description="Fast and reliable User Agent parser and IP classifier for Python",
     long_description_content_type='text/markdown',
-    url='https://github.com/udger/udger-python',
+    url='https://github.com/udger/udger-python-v4',
     packages=find_packages(
         exclude=('udger.tests',),
     ),
