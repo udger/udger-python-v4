@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "udger-v4"
-version = "5.0.1"
+version = "5.0.2"
 authors = [{ name="The Udger Team", email="info@udger.com" }]
 description = "Fast and reliable User Agent parser and IP classifier for Python"
 readme = "README.md"
