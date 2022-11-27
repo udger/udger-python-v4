@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='udger-v4',
-    version='5.0.0',
+    version='5.0.1',
     license='BSD',
     author='The Udger Team',
     author_email='info@udger.com',
